@@ -6,7 +6,7 @@ Created on Wed Jun 28 13:51:03 2017
 @author: mzwier
 """
 
-import argparse, subprocess, re, os, sys, textwrap, select
+import argparse, subprocess, re, os, sys, textwrap
 
 class MatchCapturer:
     def __init__(self, regexp):
@@ -135,6 +135,11 @@ class JmolCmdLineInterface:
         return stdout_text, stderr_text
         
     def cube_to_jvxl(self, cubefile, jvxlfile = None):
+        jvxlfile, script = self.cube_to_jvxl_script(cubefile, jvxlfile)
+        self.run_jmol_script(script)
+        return jvxlfile
+        
+    def cube_to_jvxl_script(self, cubefile, jvxlfile = None):
         jvxlfile = jvxlfile or os.path.splitext(cubefile)[0] + '.jvxl'
         
         script = '''\n
@@ -143,8 +148,7 @@ class JmolCmdLineInterface:
             write isosurface {jvxlfile:s}
             isosurface DELETE
             '''.format(cubefile=cubefile, jvxlfile=jvxlfile)
-        self.run_jmol_script(script)
-        return jvxlfile
+        return jvxlfile, script
          
 def parse_orbital_range(n_mos, mos):
     '''Parse a list of orbital specifications. Each orbital specification
@@ -185,6 +189,9 @@ parser.add_argument('mos', nargs='*',
                         +'a range of integers M-N (inclusive), or the open range M- to '
                         +'plot all orbitals >= M. (Default: all)')
 parser.add_argument('-N', '--npts', type=int, help='Number of grid points.')
+parser.add_argument('-b', '--batch', action='store_true',
+                    help='Create all cube files then process them all in the same Jmol '
+                        +'process. More time efficient but less space efficient.')
 parser.add_argument('-s', '--jmol-script', help='Filename of Jmol script to write.')
 parser.add_argument('-S', '--no-jmol-script', action='store_true', 
                     help='Do not write Jmol script')
@@ -223,19 +230,41 @@ if write_jmol:
     jmolfile = open(jmolfilename, 'wt')
     jmolfile.write('load {}\n'.format(orcaplot.xyzfile))
     
-for nmo in mos:
-    vprint('Processing MO {}'.format(nmo))
-    cubefile = orcaplot.save_orbital_cube(nmo)
-    vprint('  Saved {}'.format(cubefile))
-    jvxlfile = jmol.cube_to_jvxl(cubefile)
-    vprint('  Converted {} to {}'.format(cubefile,jvxlfile))
-    os.unlink(cubefile)
-    vprint('  Deleted {}'.format(cubefile))
-    
-    if write_jmol:
-        mo_id = 'mo{:d}'.format(nmo)
-        jmolfile.write('isosurface ID {} {}\n'.format(mo_id, jvxlfile))
-        jmolfile.write('isosurface {} off\n'.format(mo_id))
+if args.batch:
+    scripts = []
+    cubefiles = []
+    vprint('Processing all orbitals together')
+    for nmo in mos:
+        cubefile = orcaplot.save_orbital_cube(nmo)
+        cubefiles.append(cubefile)
+        vprint('  Created cube file {}'.format(cubefile))
+        jvxlfile, script = jmol.cube_to_jvxl_script(cubefile)
+        scripts.append(script)
+        if write_jmol:
+            mo_id = 'mo{:d}'.format(nmo)
+            jmolfile.write('isosurface ID {} {}\n'.format(mo_id, jvxlfile))
+            jmolfile.write('isosurface {} off\n'.format(mo_id))
+    script = '\n'.join(scripts)
+    vprint('  Converting all cube files to jvxl files')
+    jmol.run_jmol_script(script)
+    for cubefile in cubefiles:
+        vprint('  Deleting {}'.format(cubefile))
+        os.unlink(cubefile)
+else:
+    vprint('Processing one orbital at a time')
+    for nmo in mos:
+        vprint('Processing MO {}'.format(nmo))
+        cubefile = orcaplot.save_orbital_cube(nmo)
+        vprint('  Saved {}'.format(cubefile))
+        jvxlfile = jmol.cube_to_jvxl(cubefile)
+        vprint('  Converted {} to {}'.format(cubefile,jvxlfile))
+        os.unlink(cubefile)
+        vprint('  Deleted {}'.format(cubefile))
+        
+        if write_jmol:
+            mo_id = 'mo{:d}'.format(nmo)
+            jmolfile.write('isosurface ID {} {}\n'.format(mo_id, jvxlfile))
+            jmolfile.write('isosurface {} off\n'.format(mo_id))
 
 if write_jmol:
     vprint('Wrote Jmol script to {}'.format(jmolfilename))
