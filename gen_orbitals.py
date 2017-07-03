@@ -6,24 +6,7 @@ Created on Wed Jun 28 13:51:03 2017
 @author: mzwier
 """
 
-import argparse, subprocess, re, os, sys, textwrap
-
-class MatchCapturer:
-    def __init__(self, regexp):
-        self.regexp = regexp
-        self._match = None
-        self._searched = False
-        
-    def search(self,*args,**kwargs):
-        self._searched = True
-        self._match = self.regexp.search(*args,**kwargs)
-        return self._match
-        
-    def match(self,*args,**kwargs):
-        self._searched = True
-        self._match = self.regexp.match(*args,**kwargs)
-        return self._match        
-        
+import argparse, subprocess, re, os, sys, textwrap        
 
 class OrcaPlotException(RuntimeError):
     def __init__(self, *args, stdout, stderr):
