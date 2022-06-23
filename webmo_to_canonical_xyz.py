@@ -4,11 +4,10 @@ import argparse, sys
 
 import numpy as np
 
-from mendeleev import element
+from elements import element_label_to_number, element_number_to_symbol
 
 def read_webmo_xyz(xyzfile):
     points = []
-    energies = []
     titles = []
     all_symbols = []
 
@@ -16,11 +15,17 @@ def read_webmo_xyz(xyzfile):
     for line in xyzfile:
         all_coords = []
         symbols = []
-        title = line
-        titles.append(title)
         
-        while True:
+        if line.startswith('!'):
+            # Start a new coordinate block
+            titles.append(line[1:])
             coord_line = xyzfile.readline()
+        else:
+            # Evidently there is only one structure here
+            titles.append('Converted from WebMO')
+            coord_line = line
+        
+        while True:    
             if not coord_line.strip():
                 break
                 
@@ -32,11 +37,13 @@ def read_webmo_xyz(xyzfile):
                 except ValueError:
                     symbol = atom
                 else:
-                    symbol = element(atom).symbol
+                    symbol = element_number_to_symbol(element_label_to_number(atom))
                 symbols.append(symbol)
             
             coords = np.array((x,y,z), dtype=np.float64)                
             all_coords.append(coords)
+            
+            coord_line = xyzfile.readline()
 
         if symbols:
             all_symbols = symbols
