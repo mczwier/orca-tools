@@ -22,7 +22,7 @@ else:
     xyz2 -= xyz2.mean(axis=0)
     
 if args.noalign:
-    rmsd = ((xyz2 - xyz1)**2).mean() ** 0.5
+    rmsd = ((xyz2 - xyz1)**2).sum().mean() ** 0.5
 else:
     import pyximport
     pyximport.install(inplace=True, language_level=3,
