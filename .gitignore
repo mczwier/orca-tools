@@ -1,4 +1,4 @@
 .project
 .pydevproject
 __pycache__
-
+*.so

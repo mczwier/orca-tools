@@ -457,7 +457,7 @@ def FastCalcRMSDAndRotation(np.ndarray[np.float64_t, ndim=1] rot,
                     rot[0] = rot[4] = rot[8] = 1.0
                     rot[1] = rot[2] = rot[3] = rot[5] = rot[6] = rot[7] = 0.0
 
-                    return
+                    return rms
 
 
     normq = sqrt(qsqr)
