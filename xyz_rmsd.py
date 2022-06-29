@@ -29,9 +29,7 @@ else:
                       setup_args={"include_dirs":np.get_include()})
     import qcprot 
     
-    rot_matrix = np.empty((9,), dtype=np.float64)
-    
-    rmsd = qcprot.CalcRMSDRotationalMatrix(xyz1, xyz2, len(xyz1), rot_matrix, None)
+    rmsd = qcprot.CalcRMSDRotationalMatrix(xyz1, xyz2, len(xyz1), None, None)
 
 print('{}'.format(rmsd))
 
